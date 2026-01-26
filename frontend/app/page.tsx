@@ -128,8 +128,10 @@ export default function LandingPage() {
         </div>
       </section>
 
+
       {/* AI Process Section */}
       <section className="py-32 bg-white dark:bg-slate-900/50 relative overflow-hidden">
+        <BrainSignalBackground />
         <div className="container relative z-10">
           <div className="flex flex-col lg:flex-row items-center gap-20">
             <motion.div
