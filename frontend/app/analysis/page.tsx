@@ -5,9 +5,10 @@ import { MedCard } from "@/components/shared/med-card"
 import { EdfUpload } from "@/components/upload/edf-upload"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import { BrainCircuit, History, ShieldCheck } from "lucide-react"
+import { BrainCircuit, History, ShieldCheck, Activity, Zap } from "lucide-react"
 import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
+import { BrainSignalBackground } from "@/components/shared/brain-signal-bg"
 
 export default function AnalysisPage() {
     const [analyzing, setAnalyzing] = useState(false)
@@ -20,112 +21,156 @@ export default function AnalysisPage() {
     }
 
     return (
-        <div className="container py-12 md:py-20 flex flex-col items-center">
-            <div className="text-center mb-10 space-y-2">
-                <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-slate-900 dark:text-white">
-                    AI Diagnostika
-                </h1>
-                <p className="text-xl text-slate-500 max-w-xl mx-auto leading-relaxed">
-                    EEG ma'lumotlarini yuklang va sun'iy intellekt yordamida chuqur tahlil oling.
-                </p>
-            </div>
+        <div className="min-h-screen relative bg-slate-50 dark:bg-slate-950">
+            {/* Neural Background */}
+            <BrainSignalBackground />
 
-            <MedCard className="w-full max-w-3xl p-0 overflow-hidden border-none shadow-2xl">
-                <Tabs defaultValue="upload" className="w-full">
-                    <TabsList className="w-full h-16 grid grid-cols-2 rounded-none bg-slate-50/50 p-2 border-b">
-                        <TabsTrigger value="upload" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm border-r text-base font-bold">
-                            <BrainCircuit className="w-5 h-5 mr-3" />
-                            Yangi Analiz
-                        </TabsTrigger>
-                        <TabsTrigger value="history" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm text-base font-bold">
-                            <History className="w-5 h-5 mr-3" />
-                            Oxirgi Tahlillar
-                        </TabsTrigger>
-                    </TabsList>
+            <div className="container py-16 md:py-24 flex flex-col items-center relative z-10">
+                {/* Enhanced Header */}
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center mb-16 space-y-6"
+                >
+                    <div className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 shadow-sm">
+                        <Activity className="mr-2 h-4 w-4 fill-emerald-500" />
+                        Real-Time Neural Analysis
+                    </div>
 
-                    <TabsContent value="upload" className="p-12 mt-0 focus-visible:ring-0">
-                        <div className="space-y-6">
-                            {!results ? (
-                                <>
-                                    <div>
-                                        <span className="med-label">Fayl Yuklash</span>
-                                        <EdfUpload
-                                            onSuccess={handleSuccess}
-                                            onUploadStart={() => setAnalyzing(true)}
-                                        />
-                                    </div>
+                    <h1 className="text-6xl md:text-8xl font-extrabold tracking-tight leading-[1] text-slate-900 dark:text-white">
+                        AI <span className="text-primary italic">Diagnostika</span>
+                    </h1>
 
-                                    {analyzing && (
-                                        <div className="text-center animate-pulse">
-                                            <p className="text-sm font-medium text-emerald-500 italic">AI signallarni qayta ishlamoqda...</p>
-                                        </div>
-                                    )}
-                                </>
-                            ) : (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 30 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="space-y-8"
+                    <p className="text-2xl md:text-3xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
+                        EEG ma'lumotlarini yuklang va sun'iy intellekt yordamida chuqur tahlil oling.
+                    </p>
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.2 }}
+                >
+                    <MedCard className="w-full max-w-4xl p-0 overflow-hidden border-none shadow-[0_40px_100px_-15px_rgba(16,185,129,0.3)]">
+                        <Tabs defaultValue="upload" className="w-full">
+                            <TabsList className="w-full h-20 grid grid-cols-2 rounded-none bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl p-3 border-b border-slate-200 dark:border-slate-800">
+                                <TabsTrigger
+                                    value="upload"
+                                    className="rounded-2xl data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-lg border-r text-lg font-bold micro-interact h-full"
                                 >
-                                    <div className="flex items-center justify-between p-6 bg-emerald-50/50 rounded-[2rem] border border-emerald-100 shadow-sm">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-14 h-14 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/40">
-                                                <ShieldCheck className="w-8 h-8" />
-                                            </div>
+                                    <BrainCircuit className="w-6 h-6 mr-3" />
+                                    Yangi Analiz
+                                </TabsTrigger>
+                                <TabsTrigger
+                                    value="history"
+                                    className="rounded-2xl data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:shadow-lg text-lg font-bold micro-interact h-full"
+                                >
+                                    <History className="w-6 h-6 mr-3" />
+                                    Oxirgi Tahlillar
+                                </TabsTrigger>
+                            </TabsList>
+
+                            <TabsContent value="upload" className="p-12 md:p-16 mt-0 focus-visible:ring-0">
+                                <div className="space-y-8">
+                                    {!results ? (
+                                        <>
                                             <div>
-                                                <div className="med-label mb-0">Tahlil Tayyor</div>
-                                                <div className="text-xl font-bold text-slate-900">Neyro-diagnostika xulosasi</div>
+                                                <span className="med-label text-lg">Fayl Yuklash</span>
+                                                <EdfUpload
+                                                    onSuccess={handleSuccess}
+                                                    onUploadStart={() => setAnalyzing(true)}
+                                                />
                                             </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">EHIMOLI</div>
-                                            <div className="text-3xl font-black text-emerald-600">{(results.probability * 100).toFixed(1)}%</div>
-                                        </div>
+
+                                            {analyzing && (
+                                                <motion.div
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    className="text-center p-8 bg-emerald-50/50 dark:bg-emerald-900/20 rounded-[2rem] border border-emerald-200 dark:border-emerald-800"
+                                                >
+                                                    <div className="flex items-center justify-center gap-3 mb-4">
+                                                        <motion.div
+                                                            animate={{ rotate: 360 }}
+                                                            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                                                        >
+                                                            <Zap className="w-8 h-8 text-emerald-500" />
+                                                        </motion.div>
+                                                        <p className="text-xl font-bold text-emerald-600">AI signallarni qayta ishlamoqda...</p>
+                                                    </div>
+                                                    <p className="text-sm text-slate-500">Deep Learning modelimiz EEG to'lqinlarini tahlil qilmoqda</p>
+                                                </motion.div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 30 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="space-y-8"
+                                        >
+                                            <div className="flex items-center justify-between p-8 bg-emerald-50/50 dark:bg-emerald-900/20 rounded-[2rem] border border-emerald-100 dark:border-emerald-800 shadow-sm">
+                                                <div className="flex items-center gap-6">
+                                                    <div className="w-16 h-16 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/40">
+                                                        <ShieldCheck className="w-10 h-10" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="med-label mb-1">Tahlil Tayyor</div>
+                                                        <div className="text-2xl font-bold text-slate-900 dark:text-white">Neyro-diagnostika xulosasi</div>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">EHTIMOLI</div>
+                                                    <div className="text-4xl font-black text-emerald-600">{(results.probability * 100).toFixed(1)}%</div>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                                <ResultChip label="STATUS" value="Tugallandi" color="emerald" />
+                                                <ResultChip label="MODEL" value="v3.0 Emerald" color="blue" />
+                                                <ResultChip label="LATENCY" value="12.4ms" color="orange" />
+                                                <ResultChip label="DUR." value="45:00" color="purple" />
+                                            </div>
+
+                                            <div className="p-12 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm leading-relaxed text-2xl text-slate-700 dark:text-slate-300 relative overflow-hidden">
+                                                <div className="absolute left-0 top-0 bottom-0 w-2 bg-emerald-500" />
+                                                <span className="font-bold text-emerald-600">AI Xulosasi:</span> "{results.summary}"
+                                            </div>
+
+                                            <div className="flex gap-8">
+                                                <Button size="xl" className="flex-1 rounded-full shadow-xl shadow-emerald-500/20 micro-interact glow-teal h-16 text-lg">
+                                                    Professional Hisobot (.PDF)
+                                                </Button>
+                                                <Button size="xl" variant="outline" className="flex-1 rounded-full micro-interact h-16 text-lg" onClick={() => setResults(null)}>
+                                                    Yangi Tahlil
+                                                </Button>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </div>
+                            </TabsContent>
+
+                            <TabsContent value="history" className="p-12 md:p-16 mt-0 focus-visible:ring-0">
+                                <div className="h-96 flex flex-col items-center justify-center text-slate-400 space-y-6">
+                                    <div className="w-20 h-20 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                                        <History className="w-10 h-10 opacity-40" />
                                     </div>
+                                    <p className="text-xl font-medium">Hozircha tahlillar mavjud emas</p>
+                                    <p className="text-sm text-slate-400">Birinchi tahlilni yuqoridagi "Yangi Analiz" bo'limidan boshlang</p>
+                                </div>
+                            </TabsContent>
+                        </Tabs>
+                    </MedCard>
+                </motion.div>
 
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                                        <ResultChip label="STATUS" value="Tugallandi" color="emerald" />
-                                        <ResultChip label="MODEL" value="v3.0 Emerald" color="blue" />
-                                        <ResultChip label="LATENCY" value="12.4ms" color="orange" />
-                                        <ResultChip label="DUR." value="45:00" color="purple" />
-                                    </div>
-
-                                    <div className="p-12 bg-white rounded-[2rem] border border-slate-100 shadow-sm leading-relaxed text-2xl text-slate-700 relative overflow-hidden">
-                                        <div className="absolute left-0 top-0 bottom-0 w-2 bg-emerald-500" />
-                                        <span className="font-bold text-emerald-600">AI Xulosasi:</span> "{results.summary}"
-                                    </div>
-
-                                    <div className="flex gap-8">
-                                        <Button size="xl" className="flex-1 rounded-full shadow-xl shadow-emerald-500/20 micro-interact glow-teal h-16 text-lg">
-                                            Professional Hisobot (.PDF)
-                                        </Button>
-                                        <Button size="xl" variant="outline" className="flex-1 rounded-full micro-interact h-16 text-lg" onClick={() => setResults(null)}>
-                                            Yangi Tahlil
-                                        </Button>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </div>
-                    </TabsContent>
-
-                    <TabsContent value="history" className="p-12 mt-0 focus-visible:ring-0">
-                        <div className="h-80 flex flex-col items-center justify-center text-slate-400 space-y-4">
-                            <History className="w-12 h-12 opacity-20" />
-                            <p className="text-lg">Hozircha tahlillar mavjud emas</p>
-                        </div>
-                    </TabsContent>
-                </Tabs>
-            </MedCard>
-
-            <motion.div
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                className="mt-20 flex items-center gap-16"
-            >
-                <StatMini label="O'QITILGAN" value="12k+" />
-                <StatMini label="ANIQLIK" value="98.4%" />
-                <StatMini label="VREMYA" value="~15s" />
-            </motion.div>
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    className="mt-24 flex items-center gap-16"
+                >
+                    <StatMini label="O'QITILGAN" value="12k+" />
+                    <StatMini label="ANIQLIK" value="98.4%" />
+                    <StatMini label="VAQT" value="~15s" />
+                </motion.div>
+            </div>
         </div>
     )
 }
