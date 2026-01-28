@@ -11,17 +11,50 @@ import { cn } from "@/lib/utils"
 import { BrainSignalBackground } from "@/components/shared/brain-signal-bg"
 import { EegSignalPreview } from "@/components/shared/eeg-signal-preview"
 
-type AnalysisState = 'IDLE' | 'UPLOADING' | 'PRE_PROCESSING' | 'NEURAL_INFERENCE' | 'POST_PROCESSING' | 'COMPLETED'
+import apiClient from "@/lib/api-client"
+
+type AnalysisState = 'IDLE' | 'UPLOADING' | 'PRE_PROCESSING' | 'NEURAL_INFERENCE' | 'POST_PROCESSING' | 'COMPLETED' | 'ERROR'
 
 export default function AnalysisPage() {
     const [state, setState] = useState<AnalysisState>('IDLE')
     const [results, setResults] = useState<any>(null)
     const [logs, setLogs] = useState<{ time: string, msg: string, type: 'info' | 'warn' | 'success' }[]>([])
+    const [pollingId, setPollingId] = useState<number | null>(null)
 
     const addLog = (msg: string, type: 'info' | 'warn' | 'success' = 'info') => {
         const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
         setLogs(prev => [{ time, msg, type }, ...prev].slice(0, 8))
     }
+
+    const pollAnalysis = async (id: number) => {
+        try {
+            const response = await apiClient.get(`/analysis/records/${id}/`)
+            const data = response.data
+
+            if (data.status === 'processing') {
+                setState('NEURAL_INFERENCE')
+                addLog("Deep Neural Core active: Analyizing EEG channels...", 'info')
+            } else if (data.status === 'completed') {
+                setResults(data)
+                setState('COMPLETED')
+                addLog("Neural inference complete. High confidence detected.", 'success')
+                setPollingId(null)
+            } else if (data.status === 'error') {
+                setState('ERROR')
+                addLog(`Analysis failed: ${data.ai_summary}`, 'warn')
+                setPollingId(null)
+            }
+        } catch (err) {
+            console.error("Polling error:", err)
+        }
+    }
+
+    useEffect(() => {
+        if (pollingId) {
+            const interval = setInterval(() => pollAnalysis(pollingId), 2000)
+            return () => clearInterval(interval)
+        }
+    }, [pollingId])
 
     const handleUploadStart = () => {
         setState('UPLOADING')
@@ -31,26 +64,9 @@ export default function AnalysisPage() {
 
     const handleSuccess = (data: any) => {
         console.log("Upload Success", data)
-        // Simulate deep processing steps
-        addLog("Upload complete. Beginning artifact filtration...", 'success')
+        addLog("Upload complete. Beginning clinical preprocessing...", 'success')
         setState('PRE_PROCESSING')
-
-        setTimeout(() => {
-            addLog("Signal segmented. Loading LSTM-v3 model...", 'info')
-            setState('NEURAL_INFERENCE')
-
-            setTimeout(() => {
-                addLog("Neural inference complete. High confidence detected.", 'success')
-                addLog("Synthesizing clinical summary...", 'info')
-                setState('POST_PROCESSING')
-
-                setTimeout(() => {
-                    setResults(data.analysis)
-                    setState('COMPLETED')
-                    addLog("Analysis finalized. Report ready.", 'success')
-                }, 1500)
-            }, 2000)
-        }, 1500)
+        setPollingId(data.id)
     }
 
     const stepLabel = {
@@ -59,7 +75,8 @@ export default function AnalysisPage() {
         PRE_PROCESSING: "Filtrlanmoqda...",
         NEURAL_INFERENCE: "AI Tahlil...",
         POST_PROCESSING: "Xulosa tayyorlash...",
-        COMPLETED: "Tugallandi"
+        COMPLETED: "Tugallandi",
+        ERROR: "Xatolik"
     }
 
     return (

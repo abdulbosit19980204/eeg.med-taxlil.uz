@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import apiClient from "@/lib/api-client"
 
 interface EdfUploadProps {
     onSuccess: (data: any) => void
@@ -23,20 +24,36 @@ export function EdfUpload({ onSuccess, onUploadStart }: EdfUploadProps) {
         setUploading(true)
         onUploadStart()
         const formData = new FormData()
-        formData.append("file", file)
+        formData.append("edf_file", file)
 
+        // Find or use a patient ID (In production this would come from selection)
+        // For integration, we'll assume the parent component might pass it or we fetch first.
         try {
-            const response = await fetch("http://localhost:8000/api/analysis/v1/upload/", {
-                method: "POST",
-                body: formData,
-            })
+            // Check for patients first
+            const patientsRes = await apiClient.get("/clinical/patients/")
+            let patientId;
 
-            if (!response.ok) {
-                throw new Error("Upload failed")
+            if (patientsRes.data.length > 0) {
+                patientId = patientsRes.data[0].id
+            } else {
+                // Create a temporary test patient
+                const newPatient = await apiClient.post("/clinical/patients/", {
+                    fullname: "Patient-Simulated-001",
+                    gender: "M",
+                    age: 35
+                })
+                patientId = newPatient.data.id
             }
 
-            const data = await response.json()
-            onSuccess(data)
+            formData.append("patient", patientId)
+
+            const response = await apiClient.post("/analysis/records/", formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            })
+
+            onSuccess(response.data)
         } catch (err) {
             setError("Backend connection error. Ensure Django server is running.")
             console.error(err)

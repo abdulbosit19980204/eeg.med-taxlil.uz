@@ -2,17 +2,19 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import apiClient from "./api-client"
 
 interface User {
     id: string
     name: string
     email: string
     role: string
+    avatar?: string
 }
 
 interface AuthContextType {
     user: User | null
-    login: (email: string, pass: string) => Promise<void>
+    login: (username: string, pass: string) => Promise<void>
     signup: (name: string, email: string, pass: string) => Promise<void>
     logout: () => void
     isLoading: boolean
@@ -26,40 +28,83 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const router = useRouter()
 
     useEffect(() => {
-        // Simulate checking local storage/session
-        const savedUser = localStorage.getItem("med_user")
-        if (savedUser) {
-            setUser(JSON.parse(savedUser))
+        const checkAuth = async () => {
+            const token = localStorage.getItem("access_token")
+            if (token) {
+                try {
+                    const response = await apiClient.get("/users/me/")
+                    setUser({
+                        id: response.data.id,
+                        name: `${response.data.first_name} ${response.data.last_name}`.trim() || response.data.username,
+                        email: response.data.email,
+                        role: response.data.role,
+                        avatar: response.data.avatar
+                    })
+                } catch (err) {
+                    console.error("Auth check failed:", err)
+                    localStorage.removeItem("access_token")
+                }
+            }
+            setIsLoading(false)
         }
-        setIsLoading(false)
+        checkAuth()
     }, [])
 
-    const login = async (email: string, pass: string) => {
+    const login = async (username: string, pass: string) => {
         setIsLoading(true)
-        // Simulate API call
-        setTimeout(() => {
-            const mockUser = { id: "1", name: "Dr. Abduvaliyev Akmal", email, role: "Neurophysiologist" }
-            setUser(mockUser)
-            localStorage.setItem("med_user", JSON.stringify(mockUser))
-            setIsLoading(false)
+        try {
+            const response = await apiClient.post("/auth/token/", { username, password: pass })
+            localStorage.setItem("access_token", response.data.access)
+            localStorage.setItem("refresh_token", response.data.refresh)
+
+            // Fetch user profile
+            const profileRes = await apiClient.get("/users/me/")
+            const userData = {
+                id: profileRes.data.id,
+                name: `${profileRes.data.first_name} ${profileRes.data.last_name}`.trim() || profileRes.data.username,
+                email: profileRes.data.email,
+                role: profileRes.data.role,
+            }
+            setUser(userData)
+            localStorage.setItem("med_user", JSON.stringify(userData))
             router.push("/dashboard")
-        }, 1500)
+        } catch (err) {
+            console.error("Login failed:", err)
+            throw err
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     const signup = async (name: string, email: string, pass: string) => {
         setIsLoading(true)
-        setTimeout(() => {
-            const mockUser = { id: "1", name, email, role: "Clinician" }
-            setUser(mockUser)
-            localStorage.setItem("med_user", JSON.stringify(mockUser))
+        try {
+             // Split name into first and last
+            const names = name.split(" ")
+            const firstName = names[0]
+            const lastName = names.slice(1).join(" ")
+
+            await apiClient.post("/users/", {
+                username: email.split("@")[0],
+                email: email,
+                password: pass,
+                first_name: firstName,
+                last_name: lastName
+            })
+            
+            // Login after signup
+            await login(email.split("@")[0], pass)
+        } catch (err) {
+            console.error("Signup failed:", err)
+            throw err
+        } finally {
             setIsLoading(false)
-            router.push("/dashboard")
-        }, 1500)
+        }
     }
 
     const logout = () => {
         setUser(null)
-        localStorage.removeItem("med_user")
+        localStorage.clear()
         router.push("/")
     }
 
