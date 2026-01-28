@@ -12,14 +12,30 @@ const NAV_LINKS = [
     { name: "AI O'qitish", href: "/training", icon: BarChart3 },
 ]
 
+import { useState, useRef, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/lib/auth-context"
+import { LayoutDashboard, LogOut, Settings, ChevronDown } from "lucide-react"
 
 export function Navbar() {
     const pathname = usePathname()
-    const { user } = useAuth()
+    const { user, logout } = useAuth()
+    const [isMenuOpen, setIsMenuOpen] = useState(false)
+    const menuRef = useRef<HTMLDivElement>(null)
+
+    // Close menu when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setIsMenuOpen(false)
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside)
+        return () => document.removeEventListener("mousedown", handleClickOutside)
+    }, [])
 
     return (
-        <header className="glass-header">
+        <header className="glass-header relative z-[100]">
             <div className="container flex h-16 items-center justify-between">
                 <div className="flex items-center gap-8">
                     <Link href="/" className="flex items-center space-x-2">
@@ -55,17 +71,65 @@ export function Navbar() {
 
                 <div className="flex items-center gap-4">
                     {user ? (
-                        <Link
-                            href="/profile"
-                            className="flex items-center gap-2 px-1 py-1 pr-4 rounded-full border bg-white dark:bg-slate-900 border-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/5 transition-all"
-                        >
-                            <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-lg">
-                                <User className="w-4 h-4" />
-                            </div>
-                            <span className="text-sm font-black text-slate-700 dark:text-slate-300 hidden sm:inline-block truncate max-w-[120px]">
-                                {user.name}
-                            </span>
-                        </Link>
+                        <div className="relative" ref={menuRef}>
+                            <button
+                                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                                className="flex items-center gap-2 px-1 py-1 pr-3 rounded-full border bg-white dark:bg-slate-900 border-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/5 transition-all group"
+                            >
+                                <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+                                    <User className="w-4 h-4" />
+                                </div>
+                                <span className="text-sm font-black text-slate-700 dark:text-slate-300 hidden sm:inline-block truncate max-w-[120px]">
+                                    {user.name.split(' ')[0]}
+                                </span>
+                                <ChevronDown className={cn("w-4 h-4 text-slate-400 transition-transform duration-300", isMenuOpen && "rotate-180")} />
+                            </button>
+
+                            <AnimatePresence>
+                                {isMenuOpen && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        className="absolute right-0 mt-3 w-56 rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-2xl shadow-emerald-500/10 p-2 backdrop-blur-xl"
+                                    >
+                                        <div className="p-3 border-b border-slate-50 dark:border-slate-800 mb-2">
+                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Signed in as</div>
+                                            <div className="text-xs font-black text-slate-900 dark:text-white truncate">{user.email}</div>
+                                        </div>
+                                        
+                                        <Link 
+                                            href="/dashboard" 
+                                            onClick={() => setIsMenuOpen(false)}
+                                            className="flex items-center gap-3 p-3 rounded-2xl hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-all group"
+                                        >
+                                            <LayoutDashboard className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                            <span className="text-xs font-black uppercase tracking-widest">Dashboard</span>
+                                        </Link>
+
+                                        <Link 
+                                            href="/profile" 
+                                            onClick={() => setIsMenuOpen(false)}
+                                            className="flex items-center gap-3 p-3 rounded-2xl hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-all group"
+                                        >
+                                            <Settings className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                            <span className="text-xs font-black uppercase tracking-widest">Profil Sozlamalari</span>
+                                        </Link>
+
+                                        <button 
+                                            onClick={() => {
+                                                setIsMenuOpen(false)
+                                                logout()
+                                            }}
+                                            className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/10 text-slate-600 dark:text-slate-400 hover:text-red-500 transition-all group"
+                                        >
+                                            <LogOut className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                                            <span className="text-xs font-black uppercase tracking-widest">Chiqish</span>
+                                        </button>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
                     ) : (
                         <Link
                             href="/login"
