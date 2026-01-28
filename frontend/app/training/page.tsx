@@ -191,7 +191,7 @@ export default function TrainingPage() {
                             </div>
                             <div className="p-6 flex-1 font-mono space-y-3 max-h-[400px] overflow-y-auto">
                                 <AnimatePresence initial={false}>
-                                    {logsArray.map((log, i) => (
+                                    {logsArray.map((log: string, i: number) => (
                                         <motion.div key={i} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="text-[10px] leading-relaxed">
                                             <span className="text-emerald-600 font-black mr-2">»</span>
                                             <span className="text-slate-500 dark:text-slate-400 font-bold">{log}</span>

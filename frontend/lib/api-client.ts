@@ -26,10 +26,16 @@ apiClient.interceptors.response.use(
     (response: AxiosResponse) => response,
     async (error: AxiosError) => {
         const originalRequest = error.config as any
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        
+        // Skip refresh logic for login endpoint
+        const isLoginRequest = originalRequest.url.includes('/auth/token/') && !originalRequest.url.includes('/refresh/')
+
+        if (error.response?.status === 401 && !originalRequest._retry && !isLoginRequest) {
             originalRequest._retry = true
             try {
                 const refreshToken = localStorage.getItem('refresh_token')
+                if (!refreshToken) throw new Error("No refresh token")
+
                 const response = await axios.post(`${API_BASE_URL}/auth/token/refresh/`, {
                     refresh: refreshToken,
                 })
@@ -40,7 +46,10 @@ apiClient.interceptors.response.use(
                 return apiClient(originalRequest)
             } catch (err) {
                 localStorage.clear()
-                window.location.href = '/login'
+                // Only redirect to login if we weren't already there
+                if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+                    window.location.href = '/login'
+                }
             }
         }
         return Promise.reject(error)
