@@ -11,6 +11,8 @@ export const metadata: Metadata = {
   description: "Advanced EEG Analysis and AI Training Platform",
 };
 
+import { Providers } from "@/components/shared/providers";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -19,10 +21,12 @@ export default function RootLayout({
   return (
     <html lang="uz">
       <body className={cn("min-h-screen bg-slate-50 dark:bg-slate-950 font-sans antialiased", inter.className)}>
-        <Navbar />
-        <main className="flex-1">
-          {children}
-        </main>
+        <Providers>
+          <Navbar />
+          <main className="flex-1">
+            {children}
+          </main>
+        </Providers>
       </body>
     </html>
   );

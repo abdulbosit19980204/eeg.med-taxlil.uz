@@ -12,8 +12,11 @@ const NAV_LINKS = [
     { name: "AI O'qitish", href: "/training", icon: BarChart3 },
 ]
 
+import { useAuth } from "@/lib/auth-context"
+
 export function Navbar() {
     const pathname = usePathname()
+    const { user } = useAuth()
 
     return (
         <header className="glass-header">
@@ -51,17 +54,28 @@ export function Navbar() {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <Link
-                        href="/profile"
-                        className="flex items-center gap-2 px-4 py-2 rounded-full border bg-white dark:bg-slate-900 hover:shadow-sm transition-all shadow-teal-900/5"
-                    >
-                        <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                            <User className="w-4 h-4 text-slate-500" />
-                        </div>
-                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Shifokor</span>
-                    </Link>
+                    {user ? (
+                        <Link
+                            href="/profile"
+                            className="flex items-center gap-2 px-1 py-1 pr-4 rounded-full border bg-white dark:bg-slate-900 border-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/5 transition-all"
+                        >
+                            <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-lg">
+                                <User className="w-4 h-4" />
+                            </div>
+                            <span className="text-sm font-black text-slate-700 dark:text-slate-300 hidden sm:inline-block truncate max-w-[120px]">
+                                {user.name}
+                            </span>
+                        </Link>
+                    ) : (
+                        <Link
+                            href="/login"
+                            className="px-6 py-2 rounded-full bg-slate-900 text-white dark:bg-white dark:text-slate-950 font-black text-sm micro-interact shadow-xl transition-all"
+                        >
+                            Tizimga Kirish
+                        </Link>
+                    )}
                 </div>
             </div>
         </header>
-    )
+    );
 }
