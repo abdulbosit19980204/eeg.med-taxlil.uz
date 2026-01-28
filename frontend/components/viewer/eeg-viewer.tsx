@@ -19,7 +19,7 @@ export function EegViewer() {
     const [speed, setSpeed] = useState(1)
 
     // Simulation refs
-    const animationFrameRef = useRef<number>(null)
+    const animationFrameRef = useRef<number | null>(null)
     const lastTimeRef = useRef<number>(0)
 
     // Draw function
