@@ -1,5 +1,6 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
+from rest_framework.decorators import action
 from .models import EEGAnalysis, SpectralResult
 from .serializers import EEGAnalysisSerializer
 from apps.ai_engine.services import EEGProcessorService
@@ -71,8 +72,6 @@ class EEGAnalysisViewSet(viewsets.ModelViewSet):
             print(f"EEG Processing Error: {traceback.format_exc()}")
             analysis.save()
 
-    from rest_framework.decorators import action
-    
     @action(detail=True, methods=['get'])
     def signal_data(self, request, pk=None):
         """Return sampled signal data for visualization."""
@@ -103,4 +102,6 @@ class EEGAnalysisViewSet(viewsets.ModelViewSet):
                 "samples_per_channel": len(sampled_data[0]) if sampled_data else 0
             })
         except Exception as e:
+            import traceback
+            print(f"Signal Data Error: {traceback.format_exc()}")
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
