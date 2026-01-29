@@ -11,9 +11,15 @@ class AITrainingSession(models.Model):
         ('failed', 'Training Failed'),
     )
 
+    DATASET_CHOICES = (
+        ('kaggle', 'Kaggle Dataset'),
+        ('local', 'Local Upload'),
+    )
+
     name = models.CharField(max_length=100, default="Neuro-Training Run")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    dataset_source = models.CharField(max_length=255, default="Kaggle: amananandrai/complete-eeg-dataset")
+    dataset_type = models.CharField(max_length=10, choices=DATASET_CHOICES, default='kaggle')
+    dataset_source = models.CharField(max_length=512, default="Kaggle: amananandrai/complete-eeg-dataset")
     
     # Progress Metrics
     progress_percentage = models.FloatField(default=0.0)

@@ -39,7 +39,7 @@ export default function LoginPage() {
                             <div className="w-16 h-16 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-xl shadow-emerald-500/20 mb-4">
                                 <Lock className="w-8 h-8" />
                             </div>
-                            <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">Kosh Xushkelibsiz</h1>
+                            <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">Xush kelibsiz</h1>
                             <p className="text-slate-500 font-medium">Med-Taxlil tizimiga kirish uchun ma'lumotlaringizni kiriting.</p>
                         </div>
 

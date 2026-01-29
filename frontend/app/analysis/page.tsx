@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { BrainSignalBackground } from "@/components/shared/brain-signal-bg"
 import { EegSignalPreview } from "@/components/shared/eeg-signal-preview"
+import { EegViewer } from "@/components/viewer/eeg-viewer"
 
 import apiClient from "@/lib/api-client"
 
@@ -18,8 +19,22 @@ type AnalysisState = 'IDLE' | 'UPLOADING' | 'PRE_PROCESSING' | 'NEURAL_INFERENCE
 export default function AnalysisPage() {
     const [state, setState] = useState<AnalysisState>('IDLE')
     const [results, setResults] = useState<any>(null)
+    const [history, setHistory] = useState<any[]>([])
     const [logs, setLogs] = useState<{ time: string, msg: string, type: 'info' | 'warn' | 'success' }[]>([])
     const [pollingId, setPollingId] = useState<number | null>(null)
+
+    const fetchHistory = async () => {
+        try {
+            const response = await apiClient.get("/analysis/records/")
+            setHistory(response.data)
+        } catch (err) {
+            console.error("Failed to fetch history:", err)
+        }
+    }
+
+    useEffect(() => {
+        fetchHistory()
+    }, [])
 
     const addLog = (msg: string, type: 'info' | 'warn' | 'success' = 'info') => {
         const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
@@ -197,23 +212,45 @@ export default function AnalysisPage() {
                                                         </div>
                                                     </div>
                                                     <div className="text-right">
-                                                        <div className="text-3xl font-black text-emerald-600">{(results.probability * 100).toFixed(1)}%</div>
-                                                        <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-none">Confidence Score</div>
+                                                        <div className="text-3xl font-black text-emerald-600">{(results.seizure_probability * 100).toFixed(1)}%</div>
+                                                        <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-none">Seizure Confidence</div>
                                                     </div>
                                                 </div>
 
-                                                <div className="grid grid-cols-4 gap-3">
-                                                    <CompactChip label="STAT" value="Normal" color="emerald" />
-                                                    <CompactChip label="VER" value="v3.0" color="blue" />
-                                                    <CompactChip label="PROC" value="1.2s" color="orange" />
-                                                    <CompactChip label="CHAN" value="16" color="purple" />
+                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                                    <CompactChip label="CHANNELS" value={results.channels_count || "16"} color="emerald" />
+                                                    <CompactChip label="SAMPLING" value={`${results.sampling_rate || "250"} Hz`} color="blue" />
+                                                    <CompactChip label="DURATION" value={`${Math.round(results.duration_seconds || 0)}s`} color="orange" />
+                                                    <CompactChip label="STATUS" value="Verified" color="purple" />
                                                 </div>
 
-                                                <div className="p-8 bg-slate-50 dark:bg-slate-950/50 rounded-[2rem] border border-slate-100 dark:border-slate-800 text-xl text-slate-700 dark:text-slate-300 relative">
-                                                    <div className="absolute left-0 top-6 bottom-6 w-1 bg-emerald-500 rounded-r-full" />
-                                                    <span className="font-black text-emerald-500 mr-2">AI Summary:</span>
-                                                    <span className="italic">"{results.summary}"</span>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    <MedCard className="p-6 bg-slate-50 dark:bg-slate-950/50 border-slate-100 dark:border-slate-800">
+                                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Spectral Power Bands</h4>
+                                                        <div className="space-y-4">
+                                                            <PowerBand label="Alpha (8-13Hz)" value={results.spectral_data?.alpha_power || 0} color="bg-emerald-500" />
+                                                            <PowerBand label="Beta (13-30Hz)" value={results.spectral_data?.beta_power || 0} color="bg-blue-500" />
+                                                            <PowerBand label="Theta (4-8Hz)" value={results.spectral_data?.theta_power || 0} color="bg-orange-500" />
+                                                            <PowerBand label="Delta (0.5-4Hz)" value={results.spectral_data?.delta_power || 0} color="bg-purple-500" />
+                                                        </div>
+                                                    </MedCard>
+
+                                                    <div className="space-y-6">
+                                                        <div className="p-8 bg-slate-50 dark:bg-slate-950/50 rounded-[2rem] border border-slate-100 dark:border-slate-800 relative h-full">
+                                                            <div className="absolute left-0 top-6 bottom-6 w-1 bg-emerald-500 rounded-r-full" />
+                                                            <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-2">Automated AI Summary</div>
+                                                            <div className="text-sm font-bold text-slate-700 dark:text-slate-300 leading-relaxed italic">
+                                                                "{results.ai_summary}"
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
+
+                                                {/* EEG Signal Visualization */}
+                                                <MedCard className="p-4 bg-slate-950 border-slate-800 h-[400px]">
+                                                    <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-2">EEG Signal Visualization</div>
+                                                    <EegViewer analysisId={results.id} />
+                                                </MedCard>
 
                                                 <div className="flex gap-4">
                                                     <Button className="flex-1 rounded-full h-14 font-bold shadow-xl shadow-emerald-500/20 micro-interact glow-teal">
@@ -284,12 +321,44 @@ export default function AnalysisPage() {
                                     </AnimatePresence>
                                 </TabsContent>
 
-                                <TabsContent value="history" className="p-10 outline-none focus-visible:ring-0">
-                                    <div className="h-80 flex flex-col items-center justify-center text-slate-400 space-y-6">
-                                        <div className="w-16 h-16 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center">
-                                            <History className="w-8 h-8 opacity-40" />
-                                        </div>
-                                        <p className="font-bold text-sm">Hozircha tahlillar mavjud emas</p>
+                                <TabsContent value="history" className="p-0 outline-none focus-visible:ring-0">
+                                    <div className="max-h-[500px] overflow-y-auto px-6 py-6 md:p-10 space-y-4">
+                                        {history.length === 0 ? (
+                                            <div className="h-60 flex flex-col items-center justify-center text-slate-400 space-y-6">
+                                                <div className="w-16 h-16 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center">
+                                                    <History className="w-8 h-8 opacity-40" />
+                                                </div>
+                                                <p className="font-bold text-sm">Hozircha tahlillar mavjud emas</p>
+                                            </div>
+                                        ) : (
+                                            history.map((item: any) => (
+                                                <div
+                                                    key={item.id}
+                                                    onClick={() => {
+                                                        setResults(item);
+                                                        setState('COMPLETED');
+                                                    }}
+                                                    className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 hover:border-emerald-500/50 cursor-pointer transition-all group"
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-center justify-center">
+                                                            <FileText className="w-4 h-4 text-slate-400" />
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-sm font-black text-slate-900 dark:text-white">Analysis #{item.id}</div>
+                                                            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{new Date(item.created_at).toLocaleDateString()}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-6">
+                                                        <div className="text-right hidden md:block">
+                                                            <div className="text-xs font-black text-emerald-500">{((item.seizure_probability || 0) * 100).toFixed(1)}%</div>
+                                                            <div className="text-[8px] font-bold text-slate-500 uppercase tracking-widest leading-none">Confidence</div>
+                                                        </div>
+                                                        <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
                                     </div>
                                 </TabsContent>
                             </Tabs>
@@ -406,6 +475,26 @@ function CompactChip({ label, value, color }: { label: string, value: string, co
         <div className={cn("px-2 py-3 rounded-xl border flex flex-col items-center justify-center", colors[color])}>
             <span className="text-[7px] font-black uppercase tracking-[0.2em] opacity-60 mb-1">{label}</span>
             <span className="text-xs font-black">{value}</span>
+        </div>
+    )
+}
+
+function PowerBand({ label, value, color }: { label: string, value: number, color: string }) {
+    // Normalize value for progress bar
+    const normalized = Math.min((value / 10) * 100, 100)
+    return (
+        <div className="space-y-1.5">
+            <div className="flex justify-between items-center text-[9px] font-bold">
+                <span className="text-slate-500">{label}</span>
+                <span className="font-mono text-emerald-500">{value.toFixed(2)} μV²</span>
+            </div>
+            <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${normalized}%` }}
+                    className={cn("h-full rounded-full", color)}
+                />
+            </div>
         </div>
     )
 }

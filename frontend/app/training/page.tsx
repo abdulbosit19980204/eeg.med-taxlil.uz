@@ -15,13 +15,14 @@ export default function TrainingPage() {
     const [currentSession, setCurrentSession] = useState<any>(null)
     const [loading, setLoading] = useState(true)
     const [isStarting, setIsStarting] = useState(false)
+    const [uploading, setUploading] = useState(false)
+    const [datasetType, setDatasetType] = useState<'kaggle' | 'local'>('kaggle')
 
     const fetchSessions = useCallback(async () => {
         try {
             const response = await apiClient.get("/ai-engine/sessions/")
             setSessions(response.data)
 
-            // Check if there's an active session
             const active = response.data.find((s: any) =>
                 ['downloading', 'preprocessing', 'training'].includes(s.status)
             ) || response.data[0]
@@ -36,7 +37,7 @@ export default function TrainingPage() {
 
     useEffect(() => {
         fetchSessions()
-        const interval = setInterval(fetchSessions, 3000) // Poll for updates during training
+        const interval = setInterval(fetchSessions, 3000)
         return () => clearInterval(interval)
     }, [fetchSessions])
 
@@ -44,13 +45,38 @@ export default function TrainingPage() {
         setIsStarting(true)
         try {
             await apiClient.post("/ai-engine/sessions/start_training/", {
-                name: `Neuro-Inference ${new Date().toLocaleDateString()}`
+                name: `Training Run ${new Date().toLocaleDateString()}`,
+                dataset_type: datasetType,
+                dataset_source: datasetType === 'kaggle' ? 'Kaggle: amananandrai/complete-eeg-dataset' : 'Local Upload'
             })
             await fetchSessions()
         } catch (err) {
             console.error("Failed to start training:", err)
         } finally {
             setIsStarting(false)
+        }
+    }
+
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0]
+        if (!file) return
+
+        setUploading(true)
+        const formData = new FormData()
+        formData.append('file', file)
+
+        try {
+            await apiClient.post("/ai-engine/sessions/upload_dataset/", formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            })
+            setDatasetType('local')
+            await fetchSessions()
+            alert("Dataset yuklandi! Endi 'Local Dataset' tanlagan holda o'qitishni boshlashingiz mumkin.")
+        } catch (err) {
+            console.error("Upload failed:", err)
+            alert("Yuklashda xatolik yuz berdi.")
+        } finally {
+            setUploading(false)
         }
     }
 
@@ -79,7 +105,7 @@ export default function TrainingPage() {
         logs: "System standby. Ready for clinical data ingestion."
     }
 
-    const logsArray = activeSession.logs ? activeSession.logs.split('\n').filter(Boolean).reverse().slice(0, 10) : []
+    const logsArray = activeSession.logs ? activeSession.logs.split('\n').filter(Boolean).reverse().slice(0, 15) : []
 
     return (
         <div className="min-h-screen relative bg-slate-50 dark:bg-slate-950/50 overflow-hidden">
@@ -98,19 +124,48 @@ export default function TrainingPage() {
                         <p className="text-xl text-slate-500 dark:text-slate-400 mt-2">Kaggle va mahalliy datasetlar asosida modelni optimallashtirish.</p>
                     </motion.div>
 
-                    <div className="flex flex-col items-end gap-3">
-                        <Button
-                            onClick={startTraining}
-                            disabled={isStarting || ['downloading', 'preprocessing', 'training'].includes(activeSession.status)}
-                            className="rounded-3xl h-16 px-10 font-black shadow-2xl shadow-emerald-500/20 micro-interact glow-teal flex gap-3"
-                        >
-                            {isStarting || ['downloading', 'preprocessing', 'training'].includes(activeSession.status) ? (
-                                <Loader2 className="w-6 h-6 animate-spin" />
-                            ) : (
-                                <PlayCircle className="w-6 h-6" />
-                            )}
-                            O'qitishni Boshlash
-                        </Button>
+                    <div className="flex flex-col items-end gap-4">
+                        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl border border-slate-200 dark:border-slate-700">
+                            <button
+                                onClick={() => setDatasetType('kaggle')}
+                                className={cn("px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", datasetType === 'kaggle' ? "bg-white dark:bg-slate-950 text-emerald-500 shadow-sm" : "text-slate-500")}
+                            >
+                                Kaggle
+                            </button>
+                            <button
+                                onClick={() => setDatasetType('local')}
+                                className={cn("px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", datasetType === 'local' ? "bg-white dark:bg-slate-950 text-emerald-500 shadow-sm" : "text-slate-500")}
+                            >
+                                Local
+                            </button>
+                        </div>
+                        <div className="flex gap-4">
+                            <div className="relative">
+                                <input
+                                    type="file"
+                                    className="absolute inset-0 opacity-0 cursor-pointer"
+                                    accept=".zip"
+                                    onChange={handleFileUpload}
+                                    disabled={uploading}
+                                />
+                                <Button variant="outline" className="rounded-2xl h-16 px-6 font-bold flex gap-2 border-dashed border-2">
+                                    {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Database className="w-5 h-5" />}
+                                    Dataset Yuklash (ZIP)
+                                </Button>
+                            </div>
+                            <Button
+                                onClick={startTraining}
+                                disabled={isStarting || ['downloading', 'preprocessing', 'training'].includes(activeSession.status)}
+                                className="rounded-3xl h-16 px-10 font-black shadow-2xl shadow-emerald-500/20 micro-interact glow-teal flex gap-3"
+                            >
+                                {isStarting || ['downloading', 'preprocessing', 'training'].includes(activeSession.status) ? (
+                                    <Loader2 className="w-6 h-6 animate-spin" />
+                                ) : (
+                                    <PlayCircle className="w-6 h-6" />
+                                )}
+                                O'qitishni Boshlash
+                            </Button>
+                        </div>
                         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-2">
                             Status: {activeSession.status.toUpperCase()}
                         </div>
@@ -182,6 +237,26 @@ export default function TrainingPage() {
                     </div>
 
                     <div className="lg:col-span-4 space-y-8">
+                        {activeSession.status === 'failed' && (
+                            <motion.div 
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                            >
+                                <MedCard className="bg-red-500/10 border-red-500/50 p-6">
+                                    <div className="flex items-center gap-3 text-red-500 mb-4">
+                                        <AlertTriangle className="w-6 h-6" />
+                                        <h4 className="text-sm font-black uppercase tracking-widest">Tizim Xatoligi</h4>
+                                    </div>
+                                    <div className="bg-slate-900 rounded-xl p-4 font-mono text-[10px] text-red-400 overflow-auto max-h-[300px]">
+                                        {activeSession.logs}
+                                    </div>
+                                    <p className="mt-4 text-[10px] text-slate-500 font-bold leading-relaxed">
+                                        Yuqoridagi xatolik modeli o'qitish jarayonida yuz berdi. Iltimos, dataset strukturasi yoki model parametrlarini tekshiring.
+                                    </p>
+                                </MedCard>
+                            </motion.div>
+                        )}
+
                         <MedCard className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-emerald-500/10 min-h-[500px] flex flex-col p-0 overflow-hidden">
                             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/20">
                                 <h3 className="text-xs font-black tracking-[0.2em] text-slate-400 uppercase flex items-center">

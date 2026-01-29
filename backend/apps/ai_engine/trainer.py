@@ -42,14 +42,26 @@ class TrainingService:
     def _training_process(session_id):
         session = AITrainingSession.objects.get(id=session_id)
         try:
-            session.status = 'downloading'
-            session.progress_percentage = 10
-            session.logs = "Initiating Kaggle dataset download...\n"
-            session.save()
+            # 1. Dataset Selection / Download
+            if session.dataset_type == 'kaggle':
+                session.status = 'downloading'
+                session.progress_percentage = 10
+                session.logs = f"Initiating Kaggle dataset download: {session.dataset_source}...\n"
+                session.save()
+                
+                dataset_path = kagglehub.dataset_download(session.dataset_source.replace("Kaggle: ", "").strip())
+                session.logs += f"Dataset downloaded to {dataset_path}\n"
+            else:
+                session.status = 'preprocessing'
+                session.logs = f"Using local dataset: {session.dataset_source}\n"
+                dataset_path = os.path.join(settings.BASE_DIR, 'datasets', session.dataset_source)
+                if not os.path.exists(dataset_path):
+                    # For demonstration/development, we create the directory if missing
+                    os.makedirs(dataset_path, exist_ok=True)
+                    session.logs += f"Local dataset directory prepared at {dataset_path}\n"
+                else:
+                    session.logs += f"Dataset found at {dataset_path}\n"
 
-            # 1. Download Dataset
-            dataset_path = kagglehub.dataset_download("amananandrai/complete-eeg-dataset")
-            session.logs += f"Dataset downloaded to {dataset_path}\n"
             session.progress_percentage = 30
             session.save()
 
@@ -93,6 +105,8 @@ class TrainingService:
             )
 
         except Exception as e:
+            import traceback
             session.status = 'failed'
-            session.logs += f"\nCRITICAL ERROR: {str(e)}"
+            session.logs += f"\nCRITICAL ERROR: {str(e)}\n"
+            session.logs += traceback.format_exc()
             session.save()

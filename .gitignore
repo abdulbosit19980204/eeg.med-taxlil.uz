@@ -24,6 +24,13 @@ backend/local_settings.py
 .idea/
 *.swp
 *.bak
+backend/datasets/
+backend/models/
+**/trained_weights/
+*.pth
+*.h5
+*.weights
+*.onnx
 
 # Environment Variables
 .env
